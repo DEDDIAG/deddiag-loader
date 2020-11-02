@@ -11,7 +11,7 @@ def cli():
 @click.option("--host", required=True, default=lambda: os.environ.get('DEDDIAG_DB_HOST', 'localhost'))
 @click.option("--db", required=True, default=lambda: os.environ.get('DEDDIAG_DB_NAME', 'postgres'))
 @click.option("--port", required=True, default=lambda: os.environ.get('DEDDIAG_DB_PORT', '5432'))
-@click.option("--username", required=True, default=lambda: os.environ.get('DEDDIAG_DB_USER', 'postgres'))
+@click.option("--user", required=True, default=lambda: os.environ.get('DEDDIAG_DB_USER', 'postgres'))
 @click.option("--password", hide_input=True, default=lambda: os.environ.get('DEDDIAG_DB_PW'), show_default='')
 @click.option("--item-id", required=True)
 @click.option("--label-id", default=None)
@@ -32,7 +32,7 @@ def save(host, db, user, port, password, item_id, label_id, start_date, stop_dat
 @click.option("--host", required=True, default=lambda: os.environ.get('DEDDIAG_DB_HOST', 'localhost'))
 @click.option("--db", required=True, default=lambda: os.environ.get('DEDDIAG_DB_NAME', 'postgres'))
 @click.option("--port", required=True, default=lambda: os.environ.get('DEDDIAG_DB_PORT', '5432'))
-@click.option("--username", required=True, default=lambda: os.environ.get('DEDDIAG_DB_USER', 'postgres'))
+@click.option("--user", required=True, default=lambda: os.environ.get('DEDDIAG_DB_USER', 'postgres'))
 @click.option("--password", hide_input=True, default=lambda: os.environ.get('DEDDIAG_DB_PW'), show_default='')
 def stats(host, db, user, port, password):
     """Print dataset stats"""
