@@ -1,3 +1,6 @@
+import logging
+from pathlib import Path
+
 import click
 import os
 
@@ -34,21 +37,61 @@ def save(host, db, user, port, password, item_id, label_id, start_date, stop_dat
 @click.option("--port", required=True, default=lambda: os.environ.get('DEDDIAG_DB_PORT', '5432'))
 @click.option("--user", required=True, default=lambda: os.environ.get('DEDDIAG_DB_USER', 'postgres'))
 @click.option("--password", hide_input=True, default=lambda: os.environ.get('DEDDIAG_DB_PW'), show_default='')
-def stats(host, db, user, port, password):
+@click.option("--format", "print_format", type=click.Choice(["str", "latex"]), default="str")
+@click.option("--include-annotations", is_flag=True,
+              help="Include annotation count column")
+@click.option("--include-missing", is_flag=True,
+              help="Include missing data column. WARNING: Query may take some time")
+@click.option("--query-cache", type=str, help="Query cache where required queries are cached to speed up")
+def stats(host, db, user, port, password, print_format, include_annotations, include_missing, query_cache):
     """Print dataset stats"""
-    from . import Connection, Houses, Items, MeasurementsRange, Annotations
+    from . import Connection, Houses, Items, MeasurementsRange, Annotations, MeasurementsMissing
+    from ._formatter import StringFormatter, LatexFormatter
+    import pandas as pd
     con = Connection(host, port, db, user, password)
-    items = Items().request(con)
-    row_format = "{:>4}\t{:>30}\t{:>20}\t{:>20}\t{:>5}"
-    print(row_format.format("Id", "Name", "first date", "last date", "num annotations"))
+    items = Items().request(con, cache_dir=query_cache)
+    columns = ["House", "Item", "Name", "First date", "Last date", "Duration"]
+    if include_annotations:
+        columns += ["Annotations"]
+    if include_missing:
+        logging.warning("Including missing measurements stats, this will take some time!")
+        columns += ["Missing > 1h5min", "Missing > 1day"]
 
-    for _, house in Houses().request(con).iterrows():
-        print("-"*42 + f" House {house.id:2} " + "-"*42)
+    data = []
+    for _, house in Houses().request(con, cache_dir=query_cache).iterrows():
+        house_id = f"House {house.id:2}"
         for _, item in items.loc[items.house == house.id].iterrows():
-            m_range = MeasurementsRange(item['id']).request(con)
-            annotations = Annotations(item_id=item['id']).request(con)
-            print(row_format.format(item['id'],
-                                    item['name'][:30],
-                                    str(m_range.min_date.item()),
-                                    str(m_range.max_date.item()),
-                                    len(annotations)))
+            m_range = MeasurementsRange(item['id']).request(con, cache_dir=query_cache)
+
+            line = [
+                house_id,
+                item['id'],
+                item['name'],
+                str(m_range.min_date.item()),
+                str(m_range.max_date.item()),
+                f"{(m_range.max_date.item() - m_range.min_date.item()).days} days"
+            ]
+            if include_annotations:
+                annotations = Annotations(item_id=item['id']).request(con, cache_dir=query_cache)
+                line += [str(len(annotations))]
+            if include_missing:
+                missing = MeasurementsMissing(item_id=item['id']).request(con, cache_dir=query_cache)
+                line += [
+                    "{:.2f}%".format(missing.perc_missing_hour.item() * 100),
+                    "{:.2f}%".format(missing.perc_missing_day.item() * 100)
+                ]
+
+            data.append(line)
+    df = pd.DataFrame(data, columns=columns).set_index(["House", "Item"])
+    df.to_latex()
+    formatter = None
+    formatter_kwargs = {}
+    if print_format == "str":
+        formatter = StringFormatter()
+    elif print_format == "latex":
+        formatter = LatexFormatter()
+        formatter_kwargs = {'alignment': "|c|l|l|c|c|c|" + "c|" * sum([include_missing, include_annotations])}
+
+    if formatter is not None:
+        formatter.print(df, **formatter_kwargs)
+

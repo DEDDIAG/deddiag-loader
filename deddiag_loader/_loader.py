@@ -129,7 +129,7 @@ class MeasurementsExpandedWithLabels(Query):
         Get second based measurements and available labels at each time step
         Rows are returned as: [item_id, time, value, [label_id, label_id, ...]]
         :param item_id: item_id
-        :param label_id: label_id
+        :param label_id: List of label ids as integers or None
         :param start_date: First measurement
         :param stop_date: Last measurement
         """
@@ -150,6 +150,38 @@ class MeasurementsRange(Query):
     def __init__(self, item_id):
         """
         Range of measurements for given item_id
+        :param item_id: item_id
+        """
+        self._params = {
+            'item_id': item_id
+        }
+
+
+class MeasurementsMissing(Query):
+
+    _QUERY = """
+    with
+     v_min_max as (SELECT DISTINCT max(time) - min(time) as time_total FROM measurements WHERE item_id={item_id}),
+     v_lag as (SELECT time, time - LAG(time) OVER (ORDER BY time) as time_diff FROM measurements WHERE item_id={item_id}),
+     v_hour_missing as (SELECT DISTINCT sum(EXTRACT(EPOCH FROM time_diff)) as missing FROM v_lag WHERE time_diff > '1hour 5min'),
+     v_day_missing as (SELECT DISTINCT sum(EXTRACT(EPOCH FROM time_diff)) as missing FROM v_lag WHERE time_diff > '1 day')
+    SELECT 
+        DISTINCT
+       {item_id} as item_id,
+       v_min_max.time_total,
+       COALESCE(v_hour_missing.missing, 0) / EXTRACT(EPOCH FROM v_min_max.time_total) as perc_missing_hour,
+       COALESCE(v_day_missing.missing, 0) / EXTRACT(EPOCH FROM v_min_max.time_total) as perc_missing_day,
+       COALESCE(v_hour_missing.missing, 0) * interval '1 second' as missing_hour,
+       COALESCE(v_day_missing.missing, 0) * interval '1 second' as missing_day
+    FROM 
+     v_min_max,
+     v_hour_missing,
+     v_day_missing;
+    """
+
+    def __init__(self, item_id):
+        """
+        Additional information for measurements of given item_id
         :param item_id: item_id
         """
         self._params = {

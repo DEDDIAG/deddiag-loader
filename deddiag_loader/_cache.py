@@ -12,6 +12,8 @@ class QueryCache:
 
     def __init__(self, cache_dir: Union[Path, str]):
         self.cache_dir = Path(cache_dir)
+        if self.cache_dir.exists() and self.cache_dir.is_file():
+            raise NotADirectoryError(self.cache_dir)
 
     def _hash(self, s: str):
         return sha256(s.encode()).hexdigest()

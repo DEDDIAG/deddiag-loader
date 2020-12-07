@@ -7,6 +7,7 @@ from ._loader import \
     MeasurementsExpanded, \
     MeasurementsExpandedWithLabels, \
     MeasurementsRange, \
-    AnnotationLabels
+    AnnotationLabels, \
+    MeasurementsMissing
 from ._db import Connection
 from . import utils
