@@ -1,15 +1,19 @@
+from typing import List, Optional
+import pandas as pd
+
+
 class Formatter:
 
-    def format(self, df, **kwargs):
+    def format(self, df: pd.DataFrame) -> str:
         raise NotImplementedError
 
-    def print(self, df, **kwargs):
+    def print(self, df):
         print(self.format(df, **kwargs))
 
 
 class StringFormatter(Formatter):
 
-    def format(self, df):
+    def format(self, df: pd.DataFrame) -> str:
         result = []
         for house, g in df.groupby(level=0):
             result.append(f"------------------------------- {house}-------------------------------")
@@ -21,16 +25,16 @@ class StringFormatter(Formatter):
 class LatexFormatter(Formatter):
 
     def __init__(self):
-        self._buf = []
+        self._buf: List[str] = []
 
     def reset(self):
         self._buf = []
 
-    def __add__(self, other):
+    def __add__(self, other: str) -> "LatexFormatter":
         self._buf.append(other)
         return self
 
-    def format(self, df, alignment=None):
+    def format(self, df: pd.DataFrame, alignment: Optional[str] = None) -> str:
         self.reset()
         item_idx = df.index.levels[1]
         columns = [item_idx.name] + df.columns.tolist()
@@ -56,7 +60,7 @@ class LatexFormatter(Formatter):
 
         return "\n".join(self._buf)
 
-    def _bold(self, s):
+    def _bold(self, s: str) -> str:
         """
         Add latex textbf to given string
         :param s: String
@@ -64,7 +68,7 @@ class LatexFormatter(Formatter):
         """
         return r"\textbf{" + s + "}"
 
-    def _escape(self, s):
+    def _escape(self, s: str) -> str:
         """
         Escape given strings for latex
         :param s: String

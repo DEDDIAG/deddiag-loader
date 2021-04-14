@@ -1,11 +1,17 @@
 from contextlib import contextmanager
+from typing import Union
+
 import pandas as pd
 import sqlalchemy.pool as pool
 
 
 class Connection(object):
     """Connection Manager"""
-    def __init__(self, host="localhost", port="5432", db_name="postgres", user="postgres", password=""):
+    def __init__(self, host: str = "localhost",
+                 port: Union[int, str] = 5432,
+                 db_name: str = "postgres",
+                 user: str = "postgres",
+                 password: str = ""):
         """
         Database connection object
 
@@ -39,7 +45,7 @@ class Connection(object):
                              password=self._password)
         return c
 
-    def from_psql(self, query):
+    def from_psql(self, query: str):
         with self.connection() as con:
             return pd.read_sql_query(query, con)
 

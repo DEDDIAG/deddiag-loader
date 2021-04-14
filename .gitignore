@@ -59,3 +59,5 @@ target/
 
 # pycharm
 .idea/
+
+query_cache

@@ -1,7 +1,11 @@
+from pathlib import Path
+from typing import Optional, Union, List, Iterable
+import pandas as pd
+
 from ._cache import QueryCache
 
 
-class Query(object):
+class Query:
     """
     Base Query functionality
 
@@ -12,12 +16,12 @@ class Query(object):
         class SampleQuery(Query):
             _QUERY = "SELECT * FROM table"
     """
-    _QUERY = None
+    _QUERY: Optional[str] = None
 
     def __init__(self):
         self._params = {}
 
-    def request(self, con, cache_dir=None):
+    def request(self, con: "Connection", cache_dir: Optional[Union[Path, str]] = None) -> pd.DataFrame:
         q = self._format_sql()
         if cache_dir is not None:
             try:
@@ -29,7 +33,9 @@ class Query(object):
             QueryCache(cache_dir).save(q, df)
         return df
 
-    def _format_sql(self):
+    def _format_sql(self) -> str:
+        if self._QUERY is None:
+            raise NotImplementedError("No Query defined")
         return self._QUERY.format(**self._params)
 
 
@@ -53,24 +59,30 @@ class Annotations(Query):
     _QUERY = "SELECT * FROM annotations WHERE item_id={item_id} " \
              "and start_date >= {start_date} " \
              "and stop_date <= {stop_date} " \
-             "{label_id}" \
+             "{label_ids}" \
              "ORDER BY start_date"
 
-    def __init__(self, item_id, label_ids=None, start_date=None, stop_date=None):
+    def __init__(self, item_id: int,
+                 label_ids: Optional[List[int]] = None,
+                 start_date: Optional[str] = None,
+                 stop_date: Optional[str] = None):
         """
         Query annotation of given item
         :param item_id: item_id associated with annotation
         :param label_ids: list of label_ids associated with annotation. If None all annotations of item_id are returned
-        :param start_date: Start of first annotation
-        :param stop_date: End of last annotation
+        :param start_date: Start of first annotation in ISO format yyy-MM-dd'T'HH:mm:ss
+        :param stop_date: End of last annotation in ISO format yyy-MM-dd'T'HH:mm:ss
         """
         start_date = f"'{start_date}'" if start_date is not None else "to_timestamp(0)"
         stop_date = f"'{stop_date}'" if stop_date is not None else "to_timestamp('inf')"
+        if not isinstance(label_ids, Iterable):
+            label_ids = [label_ids]
+
         self._params = {
             'item_id': item_id,
             'start_date': start_date,
             'stop_date': stop_date,
-            'label_id': f"and label_id in ({','.join(label_ids)})" if label_ids is not None else ""
+            'label_ids': f"and label_id in ({','.join(map(str, label_ids))})" if label_ids is not None else ""
         }
 
 
@@ -78,7 +90,10 @@ class MeasurementsExpanded(Query):
     """Get second based measurements"""
     _QUERY = "SELECT * FROM get_measurements('{item_id}','{start_date}','{stop_date}')"
 
-    def __init__(self, item_id, start_date, stop_date):
+    def __init__(self,
+                 item_id: int,
+                 start_date: Optional[str] = None,
+                 stop_date: Optional[str] = None):
         """
         Get measurement at every second for given item_id
         :param item_id: item_id
@@ -101,7 +116,10 @@ class Measurements(Query):
     LIMIT {limit}
     """
 
-    def __init__(self, item_id, start_date, stop_date, limit=None):
+    def __init__(self, item_id: int,
+                 start_date: Optional[str] = None,
+                 stop_date: Optional[str] = None,
+                 limit: Optional[int] = None):
         """
         Get measurement at every second for given item_id
         :param item_id: item_id
@@ -120,22 +138,30 @@ class MeasurementsExpandedWithLabels(Query):
     """Get second based measurements and available annotation labels at each time step"""
     _QUERY = "SELECT *, " \
              "(SELECT count(label_id) FROM annotations " \
-             "WHERE item_id = q0.item_id {label_id} " \
+             "WHERE item_id = q0.item_id {label_ids} " \
              "and (annotations.start_date <= q0.time and q0.time <= annotations.stop_date)) > 0 as labels " \
              "FROM get_measurements('{item_id}','{start_date}','{stop_date}') q0"
 
-    def __init__(self, item_id, label_id, start_date, stop_date):
+    def __init__(self,
+                 item_id: int,
+                 label_ids: Union[List[int], int],
+                 start_date: Optional[str] = None,
+                 stop_date: Optional[str] = None
+                 ):
         """
         Get second based measurements and available labels at each time step
         Rows are returned as: [item_id, time, value, [label_id, label_id, ...]]
         :param item_id: item_id
-        :param label_id: List of label ids as integers or None
+        :param label_ids: List of label ids as integers or None
         :param start_date: First measurement
         :param stop_date: Last measurement
         """
+        if not isinstance(label_ids, Iterable):
+            label_ids = [label_ids]
+
         self._params = {
             'item_id': item_id,
-            'label_id': f"and label_id in ({','.join(label_id)})" if label_id is not None else "",
+            'label_ids': f"and label_id in ({','.join(map(str, label_ids))})" if label_ids is not None else "",
             'start_date': start_date,
             'stop_date': stop_date
         }
@@ -147,7 +173,7 @@ class MeasurementsRange(Query):
              "round_timestamp(max(time)) as max_date " \
              "FROM measurements WHERE item_id='{item_id}'"
 
-    def __init__(self, item_id):
+    def __init__(self, item_id: int):
         """
         Range of measurements for given item_id
         :param item_id: item_id
@@ -174,7 +200,7 @@ class MeasurementsMissing(Query):
     WHERE time_diff > '{threshold}'
     """
 
-    def __init__(self, item_id, threshold='1hour 5min'):
+    def __init__(self, item_id: int, threshold: str ='1hour 5min'):
         """
         Additional information for measurements of given item_id
         :param item_id: item_id
@@ -205,7 +231,7 @@ class MeasurementsMissingTotal(Query):
      v_day_missing;
     """
 
-    def __init__(self, item_id):
+    def __init__(self, item_id: int):
         """
         Additional information for measurements of given item_id
         :param item_id: item_id
