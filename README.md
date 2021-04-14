@@ -1,9 +1,22 @@
 # deddiag-loader
 Dataloader for DEDDIAG, a Domestic Energy Demand Dataset of Individual Appliances Germany.
 
-## Install
+The dataset contains recordings of 15 homes over a period of up to 3.5 years, wherein total 50 appliances have been recorded at a frequency of 1 Hz. Recorded appliances are of significance for load-shifting purposes such as dishwashers, washing machines and refrigerators. One home also includes three-phase mains readings that can be used for disaggregation tasks. Additionally, DEDDIAG contains manual ground truth event annotations for 14 appliances, that provide precise start and stop timestamps.
 
+The dataset is available for download on Figshare: [10.6084/m9.figshare.13615073.v1](https://doi.org/10.6084/m9.figshare.13615073.v1)
+
+
+## Install
+The deddiag-loader is available on [pypi](https://pypi.org/project/deddiag-loader/)
+
+```
+pip install deddiag-loader
+```
+
+### Install from source (alternative)
+```
 python setup.py install
+```
 
 ## CLI Usage
 

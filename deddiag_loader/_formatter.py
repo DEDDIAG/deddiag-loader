@@ -10,7 +10,6 @@ class Formatter:
 class StringFormatter(Formatter):
 
     def format(self, df):
-        row_format = "{:>4}\t{:>30}\t{:>20}\t{:>20}\t{:>5}"
         result = []
         for house, g in df.groupby(level=0):
             result.append(f"------------------------------- {house}-------------------------------")
@@ -31,20 +30,29 @@ class LatexFormatter(Formatter):
         self._buf.append(other)
         return self
 
-    def format(self, df, alignment=""):
+    def format(self, df, alignment=None):
         self.reset()
         item_idx = df.index.levels[1]
         columns = [item_idx.name] + df.columns.tolist()
         column_count = len(columns)
+
+        if alignment is None:
+            alignment = "|" + "c|" * column_count
+
+        # Header
         self += r"\begin{tabular}{" + alignment + "}"
         self += r"\hline"
         self += r"   &  ".join(map(self._bold, columns)) + r" \\ \hline"
+
+        # Houses
         for house, g in df.groupby(level=0):
             self += r"\multicolumn{" + str(column_count) + r"}{|c|}{\textbf{" + house + r"}} \\ \hline"
+            # Items
             for idx, values in g.iterrows():
                 self += f"{idx[1]}   &    " + "   &   ".join(map(self._escape, map(str, values))) + r" \\ \hline"
 
-        self += "\end{tabular}"
+        # End
+        self += r"\end{tabular}"
 
         return "\n".join(self._buf)
 
@@ -67,13 +75,13 @@ class LatexFormatter(Formatter):
 
         return (
             s.replace("\\", "\\textbackslash ")
+            .replace("~", "\\textasciitilde ")
+            .replace("^", "\\textasciicircum ")
             .replace("_", "\\_")
             .replace("%", "\\%")
             .replace("$", "\\$")
             .replace("#", "\\#")
             .replace("{", "\\{")
             .replace("}", "\\}")
-            .replace("~", "\\textasciitilde ")
-            .replace("^", "\\textasciicircum ")
             .replace("&", "\\&")
         )

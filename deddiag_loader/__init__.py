@@ -8,6 +8,9 @@ from ._loader import \
     MeasurementsExpandedWithLabels, \
     MeasurementsRange, \
     AnnotationLabels, \
-    MeasurementsMissing
+    MeasurementsMissing, \
+    MeasurementsMissingTotal
 from ._db import Connection
 from . import utils
+
+__version__ = '0.1.4'
