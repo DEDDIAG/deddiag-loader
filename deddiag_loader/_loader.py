@@ -75,7 +75,8 @@ class Annotations(Query):
         """
         start_date = f"'{start_date}'" if start_date is not None else "to_timestamp(0)"
         stop_date = f"'{stop_date}'" if stop_date is not None else "to_timestamp('inf')"
-        if not isinstance(label_ids, Iterable):
+
+        if label_ids is not None and not isinstance(label_ids, Iterable):
             label_ids = [label_ids]
 
         self._params = {
@@ -156,7 +157,7 @@ class MeasurementsExpandedWithLabels(Query):
         :param start_date: First measurement
         :param stop_date: Last measurement
         """
-        if not isinstance(label_ids, Iterable):
+        if label_ids is not None and not isinstance(label_ids, Iterable):
             label_ids = [label_ids]
 
         self._params = {
@@ -188,7 +189,7 @@ class MeasurementsMissing(Query):
     _QUERY = """
     with
      v_min_max as (SELECT DISTINCT max(time) - min(time) as time_total FROM measurements WHERE item_id={item_id}),
-     v_lag as (SELECT time, time - LAG(time) OVER (ORDER BY time) as time_diff FROM measurements WHERE item_id={item_id}),
+     v_lag as (SELECT time, time - LAG(time) OVER (ORDER BY time) as time_diff FROM measurements WHERE item_id={item_id})
     SELECT 
         DISTINCT
        {item_id} as item_id,
@@ -200,7 +201,7 @@ class MeasurementsMissing(Query):
     WHERE time_diff > '{threshold}'
     """
 
-    def __init__(self, item_id: int, threshold: str ='1hour 5min'):
+    def __init__(self, item_id: int, threshold: str = '1hour 5min'):
         """
         Additional information for measurements of given item_id
         :param item_id: item_id

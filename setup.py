@@ -24,7 +24,6 @@ def get_version(rel_path):
 
 setup(name='deddiag-loader',
       version=get_version("deddiag_loader/__init__.py"),
-      url='',
       packages=find_packages(),
       install_requires=["pandas", "sqlalchemy", "psycopg2", "click"],
       author='Marc Wenninger',
@@ -38,4 +37,5 @@ setup(name='deddiag-loader',
             'Operating System :: OS Independent',
       ],
       python_requires='>=3.6',
-)
+      url='https://github.com/DEDDIAG/deddiag-loader'
+      )
