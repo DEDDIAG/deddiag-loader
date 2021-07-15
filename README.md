@@ -60,12 +60,15 @@ measurements = MeasurementsExpandedWithLabels(item_id, first_annotation['label_i
 When using the dataset in academic work please cite [this paper](https://doi.org/10.1038/s41597-021-00963-2) as the reference.
 ```
 @article{DEDDIAG_2021,
-    authors={Wenninger, Marc and Maier, Andreas and Schmid, Jochen},
-    title={DEDDIAG, a domestic electricity demand dataset of individual appliances in Germany},
-    journal={Scientific Data},
-    year={2021},
-    month={Jul},
-    doi={https://doi.org/10.1038/s41597-021-00963-2}
+  author = {Marc Wenninger and Andreas Maier and Jochen Schmidt},
+  title = {{DEDDIAG}, a domestic electricity demand dataset of individual appliances in Germany},
+  year = {2021},
+  month = jul,
+  volume = {8},
+  number = {1},
+  journal = {Scientific Data},
+  doi = {https://doi.org/10.1038/s41597-021-00963-2},
+  url = {https://rdcu.be/coGqL},
 }
 ```
 

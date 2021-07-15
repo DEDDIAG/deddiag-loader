@@ -13,4 +13,4 @@ from ._loader import \
 from ._db import Connection
 from . import utils
 
-__version__ = '0.1.6'
+__version__ = '0.1.7'
